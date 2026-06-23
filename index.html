@@ -166,6 +166,9 @@
   .perf-line .pl-unit{font-size:10px; color:var(--muted); margin-left:3px;}
   .perf-note{font-size:11.5px; color:var(--muted); margin-top:13px; line-height:1.55;}
   .warn{color:var(--red);}
+  .warn-list{margin:8px 0 0; padding-left:18px;}
+  .warn-list li{margin-bottom:6px; line-height:1.5; color:var(--text);}
+  .warn-list li b{color:var(--red); font-weight:600;}
   .isa-readout{font-family:var(--mono); font-size:11.5px; color:var(--muted); margin-top:7px;}
 
   footer{margin-top:22px; font-size:11px; color:var(--muted); text-align:center; font-family:var(--mono); letter-spacing:.02em;}
@@ -630,7 +633,7 @@ function computePerf(){
   const isaDev=oat-isaT;
   $('isaReadout').textContent=`ISA à ${alt} ft = ${isaT.toFixed(1)} °C → écart ISA ${isaDev>=0?'+':''}${isaDev.toFixed(1)} °C`;
 
-  let anyClamp=false; const notes=[];
+  // (diagnostic détaillé plus bas)
 
   // Vi montée
   let vi;
@@ -640,7 +643,6 @@ function computePerf(){
   const vz=interpByMass(perf.climb,'vz',mass,alt,isaDev);
   const gr=interpByMass(perf.climb,'grad',mass,alt,isaDev);
   $('climbVz').textContent=Math.round(vz.v); $('climbGrad').textContent=gr.v.toFixed(1); $('climbVi').textContent=Math.round(vi);
-  if(vz.clamped) anyClamp=true;
 
   // masse atterrissage
   const landMass = $('perfLandMassToggle').checked ? num($('perfLandMass').value) : mass;
@@ -649,16 +651,68 @@ function computePerf(){
   const tr=interpByMass(perf.takeoff,'roll',mass,alt,isaDev);
   const t15=interpByMass(perf.takeoff,'d15',mass,alt,isaDev);
   $('toRoll').textContent=Math.round(tr.v); $('to15').textContent=Math.round(t15.v);
-  if(tr.clamped||t15.clamped) anyClamp=true;
 
   // Atterrissage (masse atterrissage)
   const lr=interpByMass(perf.landing,'roll',landMass,alt,isaDev);
   const l15=interpByMass(perf.landing,'d15',landMass,alt,isaDev);
   $('ldRoll').textContent=Math.round(lr.v); $('ld15').textContent=Math.round(l15.v);
-  if(lr.clamped||l15.clamped) anyClamp=true;
 
-  if(anyClamp) notes.push('<span class="warn">⚠️ Au moins une valeur est hors des bornes des tableaux (masse, altitude ou écart ISA) : résultat plafonné à la borne la plus proche, à utiliser avec prudence.</span>');
-  $('perfNote').innerHTML=notes.join('<br>');
+  // ---- Diagnostic précis des dépassements de bornes ----
+  const issues=[];
+  const rng = (block,axis)=>{ const a = axis==='alt'?block.alts : axis==='isa'?block.isa : block.masses; return [a[0],a[a.length-1]]; };
+  const r0=v=>Math.round(v);
+
+  // Altitude (déco/atterro : 0–4000 ; montée : 500–10500)
+  const [toAltLo,toAltHi]=rng(perf.takeoff,'alt');
+  const [clAltLo,clAltHi]=rng(perf.climb,'alt');
+  if(alt>clAltHi){
+    issues.push(`<b>Altitude pression ${alt} ft</b> dépasse le maximum des tableaux (${clAltHi} ft) : montée, décollage et atterrissage plafonnés à la dernière valeur.`);
+  } else if(alt>toAltHi){
+    issues.push(`<b>Altitude pression ${alt} ft</b> dépasse ${toAltHi} ft, limite des tables décollage/atterrissage : ces distances sont plafonnées à ${toAltHi} ft (la montée reste valable jusqu'à ${clAltHi} ft).`);
+  }
+  if(alt<clAltLo){
+    issues.push(`<b>Altitude ${alt} ft</b> sous ${clAltLo} ft : la montée est évaluée à ${clAltLo} ft (écart faible, sans incidence sur décollage/atterrissage).`);
+  }
+
+  // Température / écart ISA (−20 à +20)
+  const [isaLo,isaHi]=rng(perf.climb,'isa');
+  if(isaDev>isaHi){
+    issues.push(`<b>Température : écart ISA +${isaDev.toFixed(0)} °C</b> au-dessus de +${isaHi} °C : performances plafonnées à ISA+${isaHi} (les performances réelles seront moins bonnes par cette chaleur — prudence).`);
+  } else if(isaDev<isaLo){
+    issues.push(`<b>Température : écart ISA ${isaDev.toFixed(0)} °C</b> en dessous de ${isaLo} °C : performances plafonnées à ISA${isaLo}.`);
+  }
+
+  // Masse décollage
+  const [toMlo,toMhi]=rng(perf.takeoff,'mass');
+  if(mass>toMhi){
+    issues.push(`<b>Masse au décollage ${r0(mass)} kg</b> au-dessus du maximum des tables décollage (${toMhi} kg) : distances plafonnées à ${toMhi} kg, donc <b>sous-estimées</b> — prudence.`);
+  } else if(mass<toMlo){
+    issues.push(`<b>Masse au décollage ${r0(mass)} kg</b> sous le minimum des tables décollage (${toMlo} kg) : distances évaluées à ${toMlo} kg (valeur conservative).`);
+  }
+
+  // Masse atterrissage
+  const [ldMlo,ldMhi]=rng(perf.landing,'mass');
+  if(landMass>ldMhi){
+    issues.push(`<b>Masse à l'atterrissage ${r0(landMass)} kg</b> au-dessus du maximum des tables atterrissage (${ldMhi} kg) : distances plafonnées, donc <b>sous-estimées</b> — prudence.`);
+  } else if(landMass<ldMlo){
+    issues.push(`<b>Masse à l'atterrissage ${r0(landMass)} kg</b> sous le minimum des tables atterrissage (${ldMlo} kg) : distances évaluées à ${ldMlo} kg (valeur conservative).`);
+  }
+
+  // Masse montée (seulement si la table de montée dépend de la masse)
+  if(perf.climb.masses.length>1){
+    const [clMlo,clMhi]=rng(perf.climb,'mass');
+    if(mass>clMhi){
+      issues.push(`<b>Masse ${r0(mass)} kg</b> au-dessus du maximum des tables de montée (${clMhi} kg) : taux de montée plafonné à ${clMhi} kg, donc <b>surestimé</b> — prudence.`);
+    } else if(mass<clMlo){
+      issues.push(`<b>Masse ${r0(mass)} kg</b> sous le minimum des tables de montée (${clMlo} kg) : montée évaluée à ${clMlo} kg (conservatif).`);
+    }
+  }
+
+  if(issues.length){
+    $('perfNote').innerHTML = '<span class="warn">⚠️ Hors des bornes des tableaux — résultats plafonnés :</span><ul class="warn-list">'+issues.map(i=>`<li>${i}</li>`).join('')+'</ul>';
+  } else {
+    $('perfNote').innerHTML='';
+  }
   $('perfCond').textContent='Conditions : '+perf.condNote+' Distances de base à majorer par les coefficients réglementaires (TORA/TODA/ASDA au décollage ; ÷0,7 / LDA à l\'atterrissage).';
 }
 
