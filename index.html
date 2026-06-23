@@ -345,9 +345,7 @@
             </div>
           </div>
           <div class="perf-note" id="perfNote"></div>
-          <div class="perf-note">
-            Conditions tableaux : volets rentrés, plein gaz / 2575 RPM / plein riche (montée), sans vent, pistes selon manuel. Ajoute tes marges (vent, état/pente de piste, herbe). Distances de base, à majorer par les coefficients réglementaires (TORA/TODA/ASDA, LDA).
-          </div>
+          <div class="perf-note" id="perfCond"></div>
         </div>
       </div>
     </div>
@@ -381,7 +379,25 @@ const fleet = {
       'F-HTFI':{emptyMass:816.0,emptyArm:1.049,emptyMoment:856.160},
       'F-GTFI':{emptyMass:818.0,emptyArm:0.969,emptyMoment:792.560},
     },
-    performance:null
+    performance:{
+      vi:{ mode:'fixed', value:80 },
+      condNote:'Volets rentrés · plein gaz / 2700 RPM / plein riche · avec carénage de roue · sans vent. Montée tabulée à 1150 kg uniquement (conservatif à masse inférieure).',
+      climb:{
+        masses:[1150], alts:[500,1500,2500,3500,4500,6500,8500,10500], isa:[-20,0,20],
+        vz:{ 1150:[[1040,986,932,878,824,717,611,503],[897,846,794,743,691,588,485,382],[776,727,677,627,577,478,377,278]] },
+        grad:{ 1150:[[12.94,12.26,11.58,10.90,10.22,8.89,7.56,6.22],[11.14,10.49,9.85,9.20,8.56,7.28,6.00,4.72],[9.62,9.00,8.39,7.76,7.14,5.91,4.66,3.43]] }
+      },
+      takeoff:{
+        masses:[900,1150], alts:[0,2000,4000], isa:[-20,0,20],
+        roll:{ 900:[[134,154,177],[159,183,212],[187,216,251]], 1150:[[244,279,323],[290,334,387],[341,393,457]] },
+        d15:{ 900:[[253,290,335],[299,344,404],[351,407,482]], 1150:[[399,457,530],[475,549,642],[561,654,773]] }
+      },
+      landing:{
+        masses:[900,1092,1150], alts:[0,2000,4000], isa:[-20,0,20],
+        roll:{ 900:[[145,155,165],[155,170,185],[170,185,200]], 1092:[[180,195,205],[195,210,225],[205,225,240]], 1150:[[190,205,215],[205,220,235],[220,235,250]] },
+        d15:{ 900:[[325,345,365],[355,375,395],[385,405,425]], 1092:[[410,430,455],[435,450,485],[465,490,515]], 1150:[[430,455,480],[450,485,510],[510,520,540]] }
+      }
+    }
   },
   'TB20':{
     stations:{ front:{label:'Pilote + Pax AV',arm:1.155}, rear:{label:'Pax AR + doc',arm:2.035}, baggage:{label:'Bagages',arm:2.600}, fuelArm:1.085, fuelDensity:0.72 },
@@ -396,13 +412,10 @@ const fleet = {
       'F-GGIO':{emptyMass:855.08,emptyArm:0.882,emptyMoment:754.432},
     },
     performance:{
-      masses:[1075,1400],
-      // Vitesse de montée (Vi) selon la masse
-      viTable:{ masses:[1075,1111,1147,1183,1219,1256,1292,1328,1364,1400], vi:[86,87,88,89,90,91,92,93,94,95] },
-      // MONTÉE : vario (ft/min) & pente (%) ; alt en ft ; isaDev -20/0/+20
+      vi:{ mode:'table', masses:[1075,1111,1147,1183,1219,1256,1292,1328,1364,1400], vi:[86,87,88,89,90,91,92,93,94,95] },
+      condNote:'Volets rentrés · plein gaz / 2575 RPM / plein riche · sans vent.',
       climb:{
-        alts:[500,1500,2500,3500,4500,6500,8500,10500],
-        isa:[-20,0,20],
+        masses:[1075,1400], alts:[500,1500,2500,3500,4500,6500,8500,10500], isa:[-20,0,20],
         vz:{
           1075:[[1760,1680.5,1601,1522,1443,1287,1129,973],[1576,1501,1425,1349,1273,1122,970,818],[1422,1349,1276,1203,1130,982,836,688]],
           1400:[[1244,1178,1112,1046,979,848,716,585],[1100,1036,972,908,844,716,588,460],[977,915,853,791,729,604,479,353]]
@@ -412,15 +425,13 @@ const fleet = {
           1400:[[13.04,12.34,11.64,10.93,10.23,8.85,7.46,6.09],[11.51,10.83,10.16,9.48,8.81,7.46,6.12,4.79],[10.21,9.55,8.90,8.25,7.60,6.29,4.99,3.67]]
         }
       },
-      // DÉCOLLAGE : distances (m) ; alts 0/2000/4000 ; isaDev -20/0/+20 ; roul & d15
       takeoff:{
-        alts:[0,2000,4000], isa:[-20,0,20],
+        masses:[1075,1400], alts:[0,2000,4000], isa:[-20,0,20],
         roll:{ 1075:[[197,231,270],[235,276,324],[277,326,384]], 1400:[[340,398,466],[405,476,559],[477,562,662]] },
         d15:{ 1075:[[307,357,416],[365,426,501],[429,505,597]], 1400:[[529,621,734],[635,753,902],[757,907,1105]] }
       },
-      // ATTERRISSAGE : distances (m) ; alts 0/2000/4000 ; isaDev -20/0/+20
       landing:{
-        alts:[0,2000,4000], isa:[-20,0,20],
+        masses:[1075,1400], alts:[0,2000,4000], isa:[-20,0,20],
         roll:{ 1075:[[205,215,230],[220,235,245],[235,250,265]], 1400:[[235,250,265],[250,265,280],[270,285,305]] },
         d15:{ 1075:[[435,455,480],[460,485,510],[490,515,545]], 1400:[[520,550,575],[555,585,615],[595,625,655]] }
       }
@@ -589,15 +600,23 @@ function interpGrid(grid, alts, isas, alt, isaDev){
   const res2=lerpAxis(isaDev,isas,perIsa); if(res2.clamped)clamped=true;
   return {v:res2.v,clamped};
 }
-// interpole par masse entre deux grilles
-function interpMass(mass, masses, gridLow, gridHigh, alts, isas, alt, isaDev){
-  const a=interpGrid(gridLow,alts,isas,alt,isaDev);
-  const b=interpGrid(gridHigh,alts,isas,alt,isaDev);
-  let clamped=a.clamped||b.clamped;
-  let m=mass, mLow=masses[0], mHigh=masses[1];
-  if(m<mLow){ m=mLow; clamped=true; } if(m>mHigh){ m=mHigh; clamped=true; }
-  const f=(m-mLow)/(mHigh-mLow);
-  return {v:a.v+f*(b.v-a.v),clamped};
+// interpole un bloc de perf sur (masse, alt, isaDev), avec un nombre quelconque de masses
+// block = { masses:[...], alts:[...], isa:[...], [key]:{ massKey:grid } } ; grid = [isaIdx][altIdx]
+function interpByMass(block, key, mass, alt, isaDev){
+  const masses=block.masses;
+  const valAt = m => interpGrid(block[key][m], block.alts, block.isa, alt, isaDev);
+  if(masses.length===1){ return valAt(masses[0]); } // table à masse unique : pas d'interp masse
+  let clamped=false, m=mass;
+  const lo=masses[0], hi=masses[masses.length-1];
+  if(m<lo){ m=lo; clamped=true; } if(m>hi){ m=hi; clamped=true; }
+  for(let i=0;i<masses.length-1;i++){
+    if(m>=masses[i]&&m<=masses[i+1]){
+      const a=valAt(masses[i]), b=valAt(masses[i+1]);
+      const f=(m-masses[i])/(masses[i+1]-masses[i]);
+      return {v:a.v+f*(b.v-a.v), clamped:clamped||a.clamped||b.clamped};
+    }
+  }
+  const a=valAt(masses[masses.length-1]); return {v:a.v, clamped:clamped||a.clamped};
 }
 
 function isaTempAt(altFt){ return 15 - 2*(altFt/1000); }
@@ -613,11 +632,13 @@ function computePerf(){
 
   let anyClamp=false; const notes=[];
 
-  // Vi montée (selon masse)
-  const vi=lerpAxis(mass,perf.viTable.masses,perf.viTable.vi).v;
+  // Vi montée
+  let vi;
+  if(perf.vi.mode==='fixed'){ vi=perf.vi.value; }
+  else { vi=lerpAxis(mass,perf.vi.masses,perf.vi.vi).v; }
   // Montée
-  const vz=interpMass(mass,perf.masses,perf.climb.vz[1075],perf.climb.vz[1400],perf.climb.alts,perf.climb.isa,alt,isaDev);
-  const gr=interpMass(mass,perf.masses,perf.climb.grad[1075],perf.climb.grad[1400],perf.climb.alts,perf.climb.isa,alt,isaDev);
+  const vz=interpByMass(perf.climb,'vz',mass,alt,isaDev);
+  const gr=interpByMass(perf.climb,'grad',mass,alt,isaDev);
   $('climbVz').textContent=Math.round(vz.v); $('climbGrad').textContent=gr.v.toFixed(1); $('climbVi').textContent=Math.round(vi);
   if(vz.clamped) anyClamp=true;
 
@@ -625,19 +646,20 @@ function computePerf(){
   const landMass = $('perfLandMassToggle').checked ? num($('perfLandMass').value) : mass;
 
   // Décollage (masse décollage)
-  const tr=interpMass(mass,perf.masses,perf.takeoff.roll[1075],perf.takeoff.roll[1400],perf.takeoff.alts,perf.takeoff.isa,alt,isaDev);
-  const t15=interpMass(mass,perf.masses,perf.takeoff.d15[1075],perf.takeoff.d15[1400],perf.takeoff.alts,perf.takeoff.isa,alt,isaDev);
+  const tr=interpByMass(perf.takeoff,'roll',mass,alt,isaDev);
+  const t15=interpByMass(perf.takeoff,'d15',mass,alt,isaDev);
   $('toRoll').textContent=Math.round(tr.v); $('to15').textContent=Math.round(t15.v);
   if(tr.clamped||t15.clamped) anyClamp=true;
 
   // Atterrissage (masse atterrissage)
-  const lr=interpMass(landMass,perf.masses,perf.landing.roll[1075],perf.landing.roll[1400],perf.landing.alts,perf.landing.isa,alt,isaDev);
-  const l15=interpMass(landMass,perf.masses,perf.landing.d15[1075],perf.landing.d15[1400],perf.landing.alts,perf.landing.isa,alt,isaDev);
+  const lr=interpByMass(perf.landing,'roll',landMass,alt,isaDev);
+  const l15=interpByMass(perf.landing,'d15',landMass,alt,isaDev);
   $('ldRoll').textContent=Math.round(lr.v); $('ld15').textContent=Math.round(l15.v);
   if(lr.clamped||l15.clamped) anyClamp=true;
 
-  if(anyClamp) notes.push('<span class="warn">⚠️ Au moins une valeur est hors des bornes des tableaux (masse 1075–1400 kg, altitude 0–10500 ft selon le cas, écart ISA −20 à +20 °C) : résultat plafonné à la borne la plus proche, à utiliser avec prudence.</span>');
+  if(anyClamp) notes.push('<span class="warn">⚠️ Au moins une valeur est hors des bornes des tableaux (masse, altitude ou écart ISA) : résultat plafonné à la borne la plus proche, à utiliser avec prudence.</span>');
   $('perfNote').innerHTML=notes.join('<br>');
+  $('perfCond').textContent='Conditions : '+perf.condNote+' Distances de base à majorer par les coefficients réglementaires (TORA/TODA/ASDA au décollage ; ÷0,7 / LDA à l\'atterrissage).';
 }
 
 function syncPerfMassFromWB(){
