@@ -1,0 +1,51 @@
+name: Site et météo · GitHub Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+        with:
+          version: '11.25.0'
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tests des calculs et du chargement PDF
+        run: pnpm test
+      - name: Tests météo statique
+        run: |
+          node tests/pages-weather.test.mjs
+          python -m unittest discover -s tests -p 'test_weather_cache.py'
+      - name: Récupération des caches météo officiels
+        run: python scripts/update-weather.py
+      - uses: actions/configure-pages@v5
+        id: pages
+      - name: Construction
+        run: pnpm build
+        env:
+          PAGES_BASE: ${{ steps.pages.outputs.base_path }}/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - uses: actions/deploy-pages@v4
+        id: deployment

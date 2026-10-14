@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {loadPdfTemplate} from '../lib/pdf-export.mjs';
+let options;
+const result=await loadPdfTemplate('/dossier-taf.pdf',async(url,opt)=>{options=opt;return new Response('%PDF-1.7 test',{headers:{'content-type':'application/pdf'}})});
+assert.ok(new TextDecoder().decode(result).startsWith('%PDF-'));
+assert.equal(options.credentials,'same-origin');assert.equal(options.cache,'no-store');
+for(const status of [401,403])await assert.rejects(()=>loadPdfTemplate('/dossier-taf.pdf',async()=>new Response('',{status})),/reconnecte-toi/);
+await assert.rejects(()=>loadPdfTemplate('/dossier-taf.pdf',async()=>new Response('<html>Sign in required</html>',{headers:{'content-type':'text/html'}})),/reconnecte-toi/);
+await assert.rejects(()=>loadPdfTemplate('/dossier-taf.pdf',async()=>new Response('',{status:404})),/indisponible/);
+await assert.rejects(()=>loadPdfTemplate('/dossier-taf.pdf',async()=>new Response('invalid bytes',{headers:{'content-type':'application/pdf'}})),/pas un PDF valide/);
+console.log('8 contrôles réussis : PDF valide, session privée, page de connexion et réponse incorrecte.');

@@ -1,0 +1,10 @@
+import assert from 'node:assert/strict';
+import {newPlan,newLeg,flightResults} from '../lib/flight.mjs';
+import {audit,flightWindow,covers} from '../lib/audit.mjs';
+import {pdfData} from '../lib/pdf-adapter.mjs';
+const p=newPlan();Object.assign(p,{date:'2026-10-14',departureTime:'23:30',departure:'LFPN',pilot:'EXEMPLE',pob:'3',front:'154',rear:'77',baggage:'14',fuelActual:'150',registration:'F-GTFI'});Object.assign(p.legs[0],{arrival:'LFAT',eobt:'23:30',arrivalDate:'2026-10-15',arrivalTime:'00:30',duration:'60',alternate:'LFAB',alternateMinutes:'15'});
+const w=flightWindow(p,0);assert.equal((w.end-w.start)/60000,60);assert.ok(w.exact);assert.ok(covers([[0,20],[20,40]],0,40));assert.ok(!covers([[0,19],[20,40]],0,40));
+p.weather={ids:['LFPN','LFAT'],metars:[{icaoId:'LFPN',obsTime:w.start/1000,rawOb:'METAR EXEMPLE'}],tafs:[{icaoId:'LFPN',validTimeFrom:w.start/1000-3600,validTimeTo:w.start/1000+1800,rawTAF:'TAF EXEMPLE'}],retrievedAt:new Date(w.start).toISOString(),errors:[],source:'SOURCE EXEMPLE'};
+let r=flightResults(p),a=audit(p,r,w.start);assert.ok(a.some(s=>s.includes('TAF LFPN ne couvrant')));assert.ok(a.some(s=>s.includes('LFAT : METAR indisponible')));assert.ok(a.some(s=>s.includes('TEMSI non joint')));assert.equal(r.legs[0].alternateFuel,16);assert.equal(r.legs[0].final,30);assert.ok(audit(p,r,w.end+60000).some(s=>s.includes('TAF reçu déjà expiré')));
+p.legs.push({...newLeg(),arrival:'LFPN',duration:'60',refuel:'30',front:'77',rear:'0',baggage:'8'});r=flightResults(p);const data=pdfData(p,r);assert.ok(Math.abs(data.results.wbRows[8].mass-data.results.wbRows[9].mass-data.results.wbRows[10].mass)<1e-7);assert.ok(Math.abs(data.results.wbRows[8].moment-data.results.wbRows[9].moment-data.results.wbRows[10].moment)<1e-7);assert.equal(data.plan.legs[0].fuel.finalReserve,30);assert.equal(data.plan.legs[0].fuel.alternate,16);
+const empty=newPlan();assert.doesNotThrow(()=>pdfData(empty,flightResults(empty)));console.log('15 contrôles réussis : créneaux UTC, couverture de cartes, météo manquante/expirée, réserves et cohérence PDF multi-étapes.');
